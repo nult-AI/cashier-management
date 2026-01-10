@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: nult_cashier
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password123@postgres:5432/nult_cashier
+    depends_on:
+      - postgres
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:8000
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_data:
+
