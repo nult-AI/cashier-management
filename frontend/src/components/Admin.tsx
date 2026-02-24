@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Package, ArrowDownLeft, BarChart3, Calculator, Scale, Save, Trash2, Search, Filter, History, X } from 'lucide-react'
+import { Plus, Package, ArrowDownLeft, BarChart3, Calculator, Scale, Save, Trash2, Search, Filter, History, X, QrCode } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import {
     getProducts, createProduct, createTransaction, getStockReport,
     getPriceBoards, createPriceBoard, createUnitConversion, addPriceItem,
@@ -200,6 +201,7 @@ function ProductList({ products, onRefresh }: { products: any[], onRefresh: () =
                     <thead className="bg-white/5 text-gray-500 text-xs uppercase">
                         <tr>
                             <th className="p-4">Mã</th>
+                            <th className="p-4 text-center">QR Code</th>
                             <th className="p-4">Tên hàng</th>
                             <th className="p-4">ĐVT Gốc</th>
                             <th className="p-4 text-right">Tồn hiện tại</th>
@@ -208,8 +210,13 @@ function ProductList({ products, onRefresh }: { products: any[], onRefresh: () =
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {products.map(p => (
-                            <tr key={p.id} className="hover:bg-white/5">
+                            <tr key={p.id} className="hover:bg-white/5 group">
                                 <td className="p-4 font-mono text-primary">{p.code}</td>
+                                <td className="p-4">
+                                    <div className="flex justify-center bg-white p-2 rounded-lg w-fit mx-auto shadow-sm group-hover:scale-110 transition-transform">
+                                        <QRCodeSVG value={p.code} size={48} level="H" />
+                                    </div>
+                                </td>
                                 <td className="p-4 font-bold">{p.name}</td>
                                 <td className="p-4">{p.base_unit}</td>
                                 <td className="p-4 text-right font-bold">{p.stock_quantity.toFixed(2)}</td>

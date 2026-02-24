@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, ShoppingCart, Trash2, CreditCard, Box, AlertCircle, Package, Save } from 'lucide-react'
+import { Search, ShoppingCart, Trash2, CreditCard, Box, AlertCircle, Package, Save, QrCode, X, Camera } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getProducts, createSale } from '../api'
+import { Html5QrcodeScanner } from 'html5-qrcode'
 
 interface POSProps {
     cart: any[]
@@ -14,11 +15,62 @@ interface POSProps {
 export default function POS({ cart, setCart, selectedProduct, setSelectedProduct, onSaveDraft }: POSProps) {
     const [query, setQuery] = useState('')
     const [products, setProducts] = useState<any[]>([])
+    const [isScannerOpen, setIsScannerOpen] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
+    const scannerRef = useRef<Html5QrcodeScanner | null>(null)
 
     useEffect(() => {
         fetchProducts()
     }, [])
+
+    useEffect(() => {
+        if (isScannerOpen) {
+            const scanner = new Html5QrcodeScanner(
+                "reader",
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                false
+            );
+
+            scanner.render(onScanSuccess, onScanFailure);
+            scannerRef.current = scanner;
+        } else {
+            if (scannerRef.current) {
+                scannerRef.current.clear().catch(error => {
+                    console.error("Failed to clear scanner", error);
+                });
+                scannerRef.current = null;
+            }
+        }
+        return () => {
+            if (scannerRef.current) {
+                scannerRef.current.clear().catch(error => {
+                    console.error("Failed to clear scanner", error);
+                });
+            }
+        };
+    }, [isScannerOpen]);
+
+    const onScanSuccess = (decodedText: string) => {
+        handleProductCode(decodedText);
+        setIsScannerOpen(false);
+    };
+
+    const onScanFailure = (error: any) => {
+        // silenced
+    };
+
+    const handleProductCode = (code: string) => {
+        const q = normalizeUnit(code)
+        const exactMatch = products.find(p => normalizeUnit(p.code) === q)
+
+        if (exactMatch) {
+            addToCart(exactMatch)
+            setSelectedProduct(exactMatch)
+            setQuery('')
+        } else {
+            alert(`Không tìm thấy hàng hóa với mã: ${code}`)
+        }
+    }
 
     const fetchProducts = async () => {
         const { data } = await getProducts()
@@ -147,8 +199,16 @@ export default function POS({ cart, setCart, selectedProduct, setSelectedProduct
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Quét mã vạch hoặc nhập tên sản phẩm..."
-                            className="w-full h-14 bg-surface border border-white/5 rounded-2xl pl-12 pr-4 text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
+                            className="w-full h-14 bg-surface border border-white/5 rounded-2xl pl-12 pr-16 text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
                         />
+                        <button
+                            type="button"
+                            onClick={() => setIsScannerOpen(true)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-primary hover:bg-primary/10 rounded-xl transition-all"
+                            title="Quét mã QR/Barcode"
+                        >
+                            <QrCode size={24} />
+                        </button>
                     </form>
 
                     <AnimatePresence>
@@ -185,6 +245,38 @@ export default function POS({ cart, setCart, selectedProduct, setSelectedProduct
                                             </div>
                                         </button>
                                     ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* QR Scanner Modal */}
+                    <AnimatePresence>
+                        {isScannerOpen && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                            >
+                                <div className="bg-surface w-full max-w-md rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+                                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                        <h3 className="font-bold flex items-center gap-2">
+                                            <Camera size={18} className="text-primary" /> Quét mã sản phẩm
+                                        </h3>
+                                        <button
+                                            onClick={() => setIsScannerOpen(false)}
+                                            className="p-2 text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            <X size={24} />
+                                        </button>
+                                    </div>
+                                    <div className="p-6">
+                                        <div id="reader" className="overflow-hidden rounded-2xl border-2 border-primary/20 bg-black"></div>
+                                        <p className="mt-4 text-center text-sm text-gray-500 italic">
+                                            Đặt mã QR hoặc mã vạch của sản phẩm vào giữa khung hình để quét
+                                        </p>
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
