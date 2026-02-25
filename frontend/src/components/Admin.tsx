@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Package, ArrowDownLeft, BarChart3, Calculator, Scale, Save, Trash2, Search, Filter, History, X, QrCode } from 'lucide-react'
+import { Plus, Package, ArrowDownLeft, BarChart3, Calculator, Scale, Save, Trash2, Search, Filter, History, X, QrCode, FileDown } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
+import ExcelJS from 'exceljs'
+import { saveAs } from 'file-saver'
+import QRCode from 'qrcode'
 import {
     getProducts, createProduct, createTransaction, getStockReport,
     getPriceBoards, createPriceBoard, createUnitConversion, addPriceItem,
@@ -79,6 +82,62 @@ function ProductList({ products, onRefresh }: { products: any[], onRefresh: () =
     const [formData, setFormData] = useState({ code: '', name: '', base_unit: '', min_stock_limit: '10' })
     const [loading, setLoading] = useState(false)
 
+    const handleExportExcel = async () => {
+        setLoading(true)
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Danh sách hàng hóa');
+
+            worksheet.columns = [
+                { header: 'Mã hàng', key: 'code', width: 20 },
+                { header: 'QR Code', key: 'qr', width: 15 },
+                { header: 'Tên hàng hóa', key: 'name', width: 40 },
+                { header: 'ĐVT Gốc', key: 'unit', width: 15 },
+            ];
+
+            // Style headers
+            worksheet.getRow(1).font = { bold: true };
+            worksheet.getRow(1).alignment = { horizontal: 'center' };
+
+            for (let i = 0; i < products.length; i++) {
+                const p = products[i];
+                const row = worksheet.addRow({
+                    code: p.code,
+                    name: p.name,
+                    unit: p.base_unit
+                });
+
+                row.height = 80; // Make row tall for QR code
+
+                // Generate QR Code
+                const qrDataUrl = await QRCode.toDataURL(p.code, { margin: 1, width: 200 });
+                const imageId = workbook.addImage({
+                    base64: qrDataUrl,
+                    extension: 'png',
+                });
+
+                worksheet.addImage(imageId, {
+                    tl: { col: 1, row: i + 1 },
+                    ext: { width: 100, height: 100 }
+                });
+            }
+
+            // Central alignment
+            worksheet.getColumn(1).alignment = { vertical: 'middle', horizontal: 'center' };
+            worksheet.getColumn(2).alignment = { vertical: 'middle', horizontal: 'center' };
+            worksheet.getColumn(3).alignment = { vertical: 'middle' };
+            worksheet.getColumn(4).alignment = { vertical: 'middle', horizontal: 'center' };
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            saveAs(new Blob([buffer]), `Nult_Cashier_Products_${new Date().getTime()}.xlsx`);
+        } catch (error) {
+            console.error(error);
+            alert("Lỗi khi xuất file Excel.");
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.code || !formData.name || !formData.base_unit) return
@@ -104,14 +163,23 @@ function ProductList({ products, onRefresh }: { products: any[], onRefresh: () =
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold font-sans">Danh sách hàng hóa</h2>
-                {!showForm && (
+                <div className="flex gap-2">
                     <button
-                        onClick={() => setShowForm(true)}
-                        className="bg-primary px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-lg shadow-primary/20 active:scale-95"
+                        onClick={handleExportExcel}
+                        disabled={loading || products.length === 0}
+                        className="bg-green-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-500 transition-all shadow-lg shadow-green-900/20 active:scale-95 disabled:opacity-50"
                     >
-                        <Plus size={18} /> Thêm hàng hóa
+                        <FileDown size={18} /> Xuất Excel
                     </button>
-                )}
+                    {!showForm && (
+                        <button
+                            onClick={() => setShowForm(true)}
+                            className="bg-primary px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-lg shadow-primary/20 active:scale-95"
+                        >
+                            <Plus size={18} /> Thêm hàng hóa
+                        </button>
+                    )}
+                </div>
             </div>
 
             <AnimatePresence>
