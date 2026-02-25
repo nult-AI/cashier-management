@@ -6,6 +6,7 @@ from .database import engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
 import enum
 import unicodedata
+import datetime
 
 def normalize_unit_str(s):
     if not s: return ""
@@ -222,10 +223,14 @@ def list_transactions(
     if type:
         query = query.filter(models.Transaction.transaction_type == type)
     if date_from:
+        # If date_from is YYYY-MM-DD, fromisoformat handles it as 00:00:00
         d_from = datetime.datetime.fromisoformat(date_from)
         query = query.filter(models.Transaction.created_at >= d_from)
     if date_to:
+        # If date_to is YYYY-MM-DD, we want to include the whole day
         d_to = datetime.datetime.fromisoformat(date_to)
+        # Advance to the last microsecond of the day
+        d_to = d_to.replace(hour=23, minute=59, second=59, microsecond=999999)
         query = query.filter(models.Transaction.created_at <= d_to)
     
     transactions = query.order_by(models.Transaction.created_at.desc()).all()

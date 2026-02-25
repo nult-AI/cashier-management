@@ -408,6 +408,50 @@ function PriceBoardEditor({ products, priceBoards, onRefresh }: { products: any[
         setBoardItems({ ...boardItems, [pId]: price })
     }
 
+    const [loading, setLoading] = useState(false)
+
+    const handleExportExcel = async () => {
+        setLoading(true)
+        try {
+            const currentBoard = priceBoards.find(b => b.id === selectedBoardId);
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Bảng giá');
+
+            worksheet.columns = [
+                { header: 'Tên sản phẩm', key: 'name', width: 40 },
+                { header: 'Mã sản phẩm', key: 'code', width: 20 },
+                { header: 'Giá nhập mới nhất', key: 'purchase_price', width: 25 },
+                { header: 'Giá bán bảng giá', key: 'selling_price', width: 25 },
+            ];
+
+            // Style headers
+            worksheet.getRow(1).font = { bold: true };
+            worksheet.getRow(1).alignment = { horizontal: 'center' };
+
+            products.forEach(p => {
+                const sellingPrice = boardItems[p.id] !== undefined ? boardItems[p.id] : p.latest_purchase_price
+                worksheet.addRow({
+                    name: p.name,
+                    code: p.code,
+                    purchase_price: p.latest_purchase_price,
+                    selling_price: sellingPrice
+                });
+            });
+
+            // Column formatting
+            worksheet.getColumn(3).numFmt = '#,##0"đ"';
+            worksheet.getColumn(4).numFmt = '#,##0"đ"';
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            saveAs(new Blob([buffer]), `Bang_Gia_${currentBoard?.name || 'Unknown'}_${new Date().getTime()}.xlsx`);
+        } catch (error) {
+            console.error(error);
+            alert("Lỗi khi xuất file Excel.");
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const filteredProducts = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase()))
 
     const [showBoardForm, setShowBoardForm] = useState(false)
@@ -427,14 +471,23 @@ function PriceBoardEditor({ products, priceBoards, onRefresh }: { products: any[
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold font-sans">Cài đặt giá bán</h2>
-                {!showBoardForm && (
+                <div className="flex gap-2">
                     <button
-                        onClick={() => setShowBoardForm(true)}
-                        className="bg-primary/20 text-primary border border-primary/20 px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary/30 transition-all flex items-center gap-2 active:scale-95"
+                        onClick={handleExportExcel}
+                        disabled={loading || products.length === 0}
+                        className="bg-green-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-500 transition-all shadow-lg shadow-green-900/20 active:scale-95 disabled:opacity-50"
                     >
-                        <Plus size={18} /> Tạo bảng giá mới
+                        <FileDown size={18} /> Xuất Excel
                     </button>
-                )}
+                    {!showBoardForm && (
+                        <button
+                            onClick={() => setShowBoardForm(true)}
+                            className="bg-primary/20 text-primary border border-primary/20 px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary/30 transition-all flex items-center gap-2 active:scale-95"
+                        >
+                            <Plus size={18} /> Tạo bảng giá mới
+                        </button>
+                    )}
+                </div>
             </div>
 
             <AnimatePresence>
@@ -581,6 +634,55 @@ function InventoryManager({ products, onRefresh }: { products: any[], onRefresh:
     // History filters
     const [logParams, setLogParams] = useState({ type: '', date_from: '', date_to: '' })
     const [logs, setLogs] = useState<any[]>([])
+    const [loading, setLoading] = useState(false)
+
+    const handleExportExcel = async () => {
+        setLoading(true)
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Lịch sử giao dịch');
+
+            worksheet.columns = [
+                { header: 'Thời gian', key: 'time', width: 25 },
+                { header: 'Sản phẩm', key: 'product', width: 40 },
+                { header: 'Loại', key: 'type', width: 15 },
+                { header: 'Số lượng', key: 'qty', width: 15 },
+                { header: 'Đơn vị', key: 'unit', width: 15 },
+                { header: 'Đơn giá', key: 'price', width: 20 },
+                { header: 'Thành tiền', key: 'total', width: 20 },
+            ];
+
+            // Style headers
+            worksheet.getRow(1).font = { bold: true };
+            worksheet.getRow(1).alignment = { horizontal: 'center' };
+
+            logs.forEach(log => {
+                worksheet.addRow({
+                    time: new Date(log.created_at).toLocaleString(),
+                    product: log.product_name,
+                    type: log.type,
+                    qty: log.quantity,
+                    unit: log.unit,
+                    price: log.price,
+                    total: log.quantity * log.price
+                });
+            });
+
+            // Formatting
+            worksheet.getColumn(6).numFmt = '#,##0"đ"';
+            worksheet.getColumn(7).numFmt = '#,##0"đ"';
+            worksheet.getColumn(3).alignment = { horizontal: 'center' };
+            worksheet.getColumn(4).alignment = { horizontal: 'center' };
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            saveAs(new Blob([buffer]), `Lich_Su_Kho_${new Date().getTime()}.xlsx`);
+        } catch (error) {
+            console.error(error);
+            alert("Lỗi khi xuất file Excel.");
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const addDraft = () => {
         if (!selectedProd || !qty) return
@@ -785,9 +887,18 @@ function InventoryManager({ products, onRefresh }: { products: any[], onRefresh:
                             <label className="text-xs text-gray-500 block mb-1">Đến ngày</label>
                             <input type="date" className="w-full bg-background border border-white/10 rounded-lg p-2 outline-none" value={logParams.date_to} onChange={e => setLogParams({ ...logParams, date_to: e.target.value })} />
                         </div>
-                        <button onClick={fetchLogs} className="bg-surface border border-white/10 py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold hover:bg-white/5 transition-colors">
-                            <Filter size={16} /> Lọc kết quả
-                        </button>
+                        <div className="flex gap-2">
+                            <button onClick={fetchLogs} className="flex-1 bg-surface border border-white/10 py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold hover:bg-white/5 transition-colors">
+                                <Filter size={16} /> Lọc kết quả
+                            </button>
+                            <button
+                                onClick={handleExportExcel}
+                                disabled={loading || logs.length === 0}
+                                className="bg-green-600 px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-green-500 transition-all shadow-lg shadow-green-900/20 active:scale-95 disabled:opacity-50"
+                            >
+                                <FileDown size={16} /> Xuất Excel
+                            </button>
+                        </div>
                     </div>
 
                     <div className="glass-card rounded-2xl overflow-hidden border-white/5">
@@ -827,6 +938,60 @@ function InventoryManager({ products, onRefresh }: { products: any[], onRefresh:
 }
 
 function StockReport({ report, priceBoards, selectedBoard, setSelectedBoard, useConversion, setUseConversion }: any) {
+    const [loading, setLoading] = useState(false)
+
+    const handleExportExcel = async () => {
+        setLoading(true)
+        try {
+            const currentBoard = priceBoards.find((b: any) => b.id === selectedBoard);
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Báo cáo tồn kho');
+
+            worksheet.columns = [
+                { header: 'Tên sản phẩm', key: 'name', width: 40 },
+                { header: 'Số lượng tồn', key: 'quantity', width: 20 },
+                { header: 'Đơn vị', key: 'unit', width: 15 },
+                { header: 'Giá bán (Bảng giá)', key: 'price', width: 25 },
+                { header: 'Tổng giá trị tồn', key: 'value', width: 25 },
+            ];
+
+            // Style headers
+            worksheet.getRow(1).font = { bold: true };
+            worksheet.getRow(1).alignment = { horizontal: 'center' };
+
+            report.forEach((item: any) => {
+                worksheet.addRow({
+                    name: item.name,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    price: item.price,
+                    value: item.value
+                });
+            });
+
+            // Footer Total
+            const totalValue = report.reduce((sum: any, item: any) => sum + item.value, 0);
+            const totalRow = worksheet.addRow({
+                name: 'TỔNG CỘNG GIÁ TRỊ TỒN',
+                value: totalValue
+            });
+            totalRow.font = { bold: true };
+            worksheet.mergeCells(`A${totalRow.number}:D${totalRow.number}`);
+
+            // Formatting
+            worksheet.getColumn(4).numFmt = '#,##0"đ"';
+            worksheet.getColumn(5).numFmt = '#,##0"đ"';
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            saveAs(new Blob([buffer]), `Bao_Cao_Ton_Kho_${currentBoard?.name || 'Unknown'}_${useConversion ? 'QuyDoi' : 'Goc'}_${new Date().getTime()}.xlsx`);
+        } catch (error) {
+            console.error(error);
+            alert("Lỗi khi xuất file Excel.");
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center bg-surface p-4 rounded-2xl border border-white/5">
@@ -850,6 +1015,13 @@ function StockReport({ report, priceBoards, selectedBoard, setSelectedBoard, use
                         />
                         <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">Xem theo quy đổi</span>
                     </label>
+                    <button
+                        onClick={handleExportExcel}
+                        disabled={loading || report.length === 0}
+                        className="bg-green-600 px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-green-500 transition-all shadow-lg shadow-green-900/20 active:scale-95 disabled:opacity-50"
+                    >
+                        <FileDown size={14} /> Xuất Excel
+                    </button>
                 </div>
                 <div className="bg-primary/10 px-4 py-2 rounded-xl text-right">
                     <div className="text-[10px] text-primary uppercase font-bold">Tổng giá trị tồn</div>
