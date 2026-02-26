@@ -12,5 +12,9 @@ RUN uv sync --frozen
 # Copy the rest of the application
 COPY . .
 
+# Expose the application port for hugging face
+EXPOSE 7860
+
 # Run the application
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+#CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
