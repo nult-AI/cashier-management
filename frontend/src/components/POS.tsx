@@ -55,7 +55,7 @@ export default function POS({ cart, setCart, selectedProduct, setSelectedProduct
         setIsScannerOpen(false);
     };
 
-    const onScanFailure = (error: any) => {
+    const onScanFailure = (_: any) => {
         // silenced
     };
 

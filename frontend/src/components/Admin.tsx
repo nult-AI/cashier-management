@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Package, ArrowDownLeft, BarChart3, Calculator, Scale, Save, Trash2, Search, Filter, History, X, QrCode, FileDown } from 'lucide-react'
+import { Plus, Package, ArrowDownLeft, BarChart3, Calculator, Scale, Save, Trash2, Search, Filter, History, X, FileDown } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
