@@ -329,7 +329,7 @@ export default function POS({ cart, setCart, selectedProduct, setSelectedProduct
                                                 )}
                                             </td>
                                             <td className="p-3">
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
                                                     <div className="flex items-center gap-2 bg-white/5 rounded-lg px-2 py-1">
                                                         <input
                                                             type="number"
@@ -342,13 +342,13 @@ export default function POS({ cart, setCart, selectedProduct, setSelectedProduct
                                                         />
                                                         <span className="text-xs text-gray-400 font-bold">{item.displayUnit}</span>
                                                     </div>
-                                                    <div className="text-xs text-gray-400 font-medium">
-                                                        * {currentPrice.toLocaleString()}đ/{item.displayUnit}
+                                                    <div className="text-xs text-gray-400 font-medium md:ml-1">
+                                                        * {((currentPrice) / 1000).toLocaleString()}K / {item.displayUnit}
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="p-3 text-right font-bold text-primary">
-                                                {(item.quantity * currentPrice).toLocaleString()}đ
+                                                {((item.quantity * currentPrice) / 1000).toLocaleString()}K
                                             </td>
                                             <td className="p-3 text-right">
                                                 <button
@@ -373,7 +373,10 @@ export default function POS({ cart, setCart, selectedProduct, setSelectedProduct
 
                     <div className="p-6 bg-white/5 border-t border-white/5 space-y-3">
                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-gray-400">Tổng tiền thanh toán</span>
+                            <span className="text-gray-400">
+                                <span className="hidden md:inline">Tổng tiền thanh toán</span>
+                                <span className="md:hidden">TT</span>
+                            </span>
                             <span className="text-3xl font-bold gradient-text">{total.toLocaleString()}đ</span>
                         </div>
                         <div className="flex gap-3">
@@ -382,14 +385,16 @@ export default function POS({ cart, setCart, selectedProduct, setSelectedProduct
                                 disabled={cart.length === 0}
                                 className="flex-1 h-14 bg-white/5 text-gray-300 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50"
                             >
-                                <Save size={20} /> Lưu đơn tạm
+                                <Save size={20} />
+                                <span className="hidden md:inline">Lưu đơn tạm</span>
                             </button>
                             <button
                                 onClick={handleCheckout}
                                 disabled={cart.length === 0}
                                 className="flex-[2] h-14 bg-primary text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:bg-indigo-500 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
                             >
-                                <CreditCard size={20} /> Thanh toán
+                                <CreditCard size={20} />
+                                <span className="hidden md:inline">Thanh toán</span>
                             </button>
                         </div>
                     </div>
@@ -397,7 +402,7 @@ export default function POS({ cart, setCart, selectedProduct, setSelectedProduct
             </div>
 
             {/* Right Sidebar: Stock Info */}
-            <div className="w-80 border-l border-white/5 p-6 bg-surface/50 backdrop-blur-sm">
+            <div className="hidden md:block w-80 border-l border-white/5 p-6 bg-surface/50 backdrop-blur-sm">
                 <h3 className="font-bold text-gray-400 text-xs uppercase tracking-wider mb-6">Thông tin hàng hóa</h3>
 
                 <AnimatePresence mode="wait">
