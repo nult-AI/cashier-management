@@ -66,7 +66,7 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to Nult Cashier API"}
+    return {"message": "Welcome to Nult Cashier API CICD!"}
 
 # Product Endpoints
 @app.get("/products", response_model=List[dict])
