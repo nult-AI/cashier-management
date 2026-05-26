@@ -13,3 +13,10 @@
 3. Login to ACR: az acr login --name acrnultcashiertest
 4. Build image: docker build -t acrnultcashiertest.azurecr.io/nult-cashier-backend:v1 .
 5. Push image: docker push acrnultcashiertest.azurecr.io/nult-cashier-backend:v1
+
+
+# CI/CD with github:
+- chạy lệnh bên đưới để lấy azure credentials, sau đó dán vào secret của github repository
+  - Name: AZURE_CREDENTIALS
+  - Value: output của lệnh bên dưới
+az ad sp create-for-rbac --name "github-actions-rsa" --role contributor --scopes /subscriptions/33ec68a6-22a4-4ae4-84da-fa8a82cc7694/resourceGroups/rg-nult-cashier-test --sdk-auth
